@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Open Issues Dashboard (Ordered)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+:root {
+  --bg:#111;--panel:#1c1f24;--panel-alt:#242a30;--txt:#eee;--accent:#4da3ff;
+
+<!-- Add New Issue Button and Modal -->
+<div style="margin:1rem 1.25rem 0 1.25rem;">
+  <button id="addIssueBtn" style="background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;font-size:.8rem;cursor:pointer;">Add New Issue</button>
+</div>
+
+<div id="addIssueModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--panel);padding:2rem 2.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0008;position:relative;">
+    <h2 style="margin-top:0;font-size:1rem;">Add New Issue</h2>
+    <form id="addIssueForm">
+      <div style="margin-bottom:.7rem;">
+        <label for="newProgram">Program</label>
+        <select id="newProgram" required style="width:100%;background:var(--panel-alt);color:var(--txt);">
+          <option value="">Select...</option>
+          <option>CX727</option>
+          <option>P708</option>
+          <option>HVF</option>
+          <option>General</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newPriority">Priority</label>
+        <input id="newPriority" type="text" style="width:100%;background:var(--panel-alt);color:var(--txt);" />
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newItem">Item Description</label>
+        <input id="newItem" type="text" required style="width:100%;background:var(--panel-alt);color:var(--txt);" />
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newStatus">Status</label>
+        <select id="newStatus" required style="width:100%;background:var(--panel-alt);color:var(--txt);">
+          <option value="">Select...</option>
+          <option>Open</option>
+          <option>In Progress</option>
+          <option>On Hold</option>
+          <option>Approved</option>
+          <option>Closed</option>
+          <option>Duplicate</option>
+          <option>Urgent</option>
+          <option>Implementation</option>
+          <option>Planning</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newNext">Next Steps</label>
+        <input id="newNext" type="text" style="width:100%;background:var(--panel-alt);color:var(--txt);" />
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.2rem;">
+        <button type="button" id="cancelAddIssue" style="background:var(--border);color:var(--txt);border:none;padding:.45rem 1.1rem;border-radius:5px;">Cancel</button>
+        <button type="submit" style="background:var(--accent);color:#fff;border:none;padding:.45rem 1.1rem;border-radius:5px;">Add Issue</button>
+      </div>
+    </form>
+  </div>
+</div>
+  --warn:#ffcc33;--danger:#ff5f56;--ok:#5fbf6a;--hold:#b084ff;--border:#333;
+  --phase:#2d3742;--font:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;font-family:var(--font)}
+body{margin:0;background:var(--bg);color:var(--txt);line-height:1.3;}
+header{padding:1rem 1.25rem;background:#0b0d10;display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end}
+h1{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:.5px;}
+label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;opacity:.85;display:block;margin-bottom:2px}
+select,input[type="search"]{background:var(--panel);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;font-size:.7rem;min-width:132px;}
+input[type="search"]{width:230px}
+table{width:100%;border-collapse:collapse;font-size:.64rem;}
+th,td{padding:.45rem .55rem;vertical-align:top;border-bottom:1px solid var(--border);}
+th{position:sticky;top:0;background:#0f1419;z-index:5;text-align:left;font-weight:600;}
+tbody tr:nth-child(even){background:var(--panel);}
+tbody tr:nth-child(odd){background:var(--panel-alt);}
+.phase-badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.52rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.priority-badge{display:inline-block;min-width:18px;text-align:center;padding:2px 6px;border-radius:4px;font-size:.55rem;font-weight:700;letter-spacing:.04em}
+.priority-1{background:#b30000;color:#fff;}
+.priority-2{background:#ff8c00;color:#222;}
+.priority-3{background:#1b6e1b;color:#fff;}
+.priority-4{background:#1e4d80;color:#fff;}
+.phase-Concept{background:#2b3f66}
+.phase-Planning{background:#254d5e}
+.phase-PP{background:#5a3d7a}
+.phase-Implementation{background:#375d2b}
+.phase-Validation{background:#6b5220}
+.phase-Release{background:#5b2f2f}
+.phase-Closure{background:#2f4f3b}
+.phase-Documentation{background:#4a3f52}
+.phase-Launch{background:#3d4a6f}
+.phase-Rework{background:#6f3d3d}
+.phase-OnHold{background:#5a4b00}
+.phase-Personal{background:#3a4055}
+.status{font-weight:600;}
+.status-Open{color:var(--warn)}
+.status-InProgress{color:var(--accent)}
+.status-OnHold{color:var(--hold)}
+.status-Approved{color:var(--ok)}
+.status-Closed{color:var(--ok)}
+.status-Urgent{color:var(--danger)}
+.details-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:.6rem;padding:0;text-decoration:underline}
+details{margin-top:.35rem}
+details summary{cursor:pointer;color:var(--accent);font-size:.6rem}
+footer{padding:.75rem 1rem;font-size:.55rem;opacity:.7}
+.controls-row{display:flex;gap:1rem;flex-wrap:wrap}
+#stats{font-size:.55rem;margin-left:auto;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap}
+.badge-my{background:#22364d;color:#b7ddff;padding:2px 6px;border-radius:6px;font-size:.55rem;font-weight:600;letter-spacing:.04em}
+.nowrap{white-space:nowrap}
+@media (max-width:1180px){
+  th:nth-child(7),td:nth-child(7){display:none}
+}
+@media (max-width:920px){
+  table,thead,tr,th,td{font-size:.58rem}
+  header{flex-direction:column;align-items:stretch}
+  #stats{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Open Issues Dashboard (Ordered)</h1>
+  <div class="controls-row">
+    <div>
+      <label for="filterProgram">Program</label>
+      <select id="filterProgram">
+        <option value="">All</option>
+        <option>CX727</option>
+        <option>P708</option>
+        <option>HVF</option>
+        <option>General</option>
+      </select>
+    </div>
+    <div>
+      <label for="filterPhase">Implementation Phase</label>
+      <select id="filterPhase">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div>
+      <label for="filterStatus">Status</label>
+      <select id="filterStatus">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div>
+      <label for="filterMY">Model Year</label>
+      <select id="filterMY">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div>
+      <label for="searchBox">Search</label>
+      <input id="searchBox" type="search" placeholder="Any text..."/>
+    </div>
+    <div>
+      <label for="showClosed">Show Closed</label>
+      <select id="showClosed">
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+      </select>
+    </div>
+  </div>
+  <div id="stats"></div>
+</header>
+
+<!-- Add New Issue Button -->
+<div style="margin:1rem 1.25rem 0 1.25rem;">
+  <button id="addIssueBtn" style="background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;font-size:.8rem;cursor:pointer;">Add New Issue</button>
+    <!-- Reset All Data button removed -->
+</div>
+
+<!-- Add New Issue Modal -->
+<div id="addIssueModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--panel);padding:2rem 2.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0008;position:relative;">
+    <h2 style="margin-top:0;font-size:1rem;">Add New Issue</h2>
+    <form id="addIssueForm">
+      <div style="margin-bottom:.7rem;">
+        <label for="newProgram">Program</label>
+        <select id="newProgram" required style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;">
+          <option value="">Select...</option>
+          <option>CX727</option>
+          <option>P708</option>
+          <option>HVF</option>
+          <option>General</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newPriority">Priority</label>
+        <select id="newPriority" style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;">
+          <option value="">Select...</option>
+          <option>Urgent and Important</option>
+          <option>Important but Not Urgent</option>
+          <option>Urgent but Not Important</option>
+          <option>Neither Urgent nor Important</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newItem">Item Description</label>
+        <input id="newItem" type="text" required style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;" />
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newStatus">Status</label>
+        <select id="newStatus" required style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;">
+          <option value="">Select...</option>
+          <option>Open</option>
+          <option>In Progress</option>
+          <option>On Hold</option>
+          <option>Approved</option>
+          <option>Closed</option>
+          <option>Duplicate</option>
+          <option>Urgent</option>
+          <option>Implementation</option>
+          <option>Planning</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newNext">Next Steps</label>
+        <input id="newNext" type="text" style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;" />
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newMY">Model Year (MY)</label>
+        <select id="newMY" style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;">
+          <option value="">Select...</option>
+          <option>25MY</option>
+          <option>26MY</option>
+          <option>26.5MY</option>
+          <option>27MY</option>
+          <option>28MY</option>
+          <option>29MY</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.7rem;">
+        <label for="newPhase">Implementation Phase</label>
+        <select id="newPhase" style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;">
+          <option value="">Select...</option>
+          <option>Concept</option>
+          <option>On Hold</option>
+          <option>PP</option>
+          <option>TT</option>
+          <option>MP1</option>
+          <option>MP2</option>
+          <option>RC</option>
+          <option>Planning</option>
+          <option>Personal</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.2rem;">
+        <button type="button" id="cancelAddIssue" style="background:var(--border);color:var(--txt);border:none;padding:.45rem 1.1rem;border-radius:5px;cursor:pointer;">Cancel</button>
+        <button type="submit" style="background:var(--accent);color:#fff;border:none;padding:.45rem 1.1rem;border-radius:5px;cursor:pointer;">Add Issue</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<table id="issuesTable">
+  <thead>
+    <tr>
+      <th style="min-width:130px">Implementation Phase / MY</th>
+      <th>Program</th>
+      <th>Priority</th>
+      <th>Item</th>
+      <th>Status</th>
+      <th>Next Steps</th>
+      <th>Completion / Target</th>
+      <th>Notes (Expand)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<footer>
+  Program filter limited to CX727, P708, HVF, General. Phase label renamed to Implementation Phase. Update data array to maintain.
+</footer>
+
+<script>
+/*
+Phases used: Concept, Planning, PP, Implementation, Validation, Release, Closure,
+Documentation, Launch, Rework, OnHold, Personal
+Status normalized: Open, In Progress, On Hold, Approved, Closed, Duplicate, Urgent, Implementation, Planning
+*/
+// Ordered & normalized from provided list
+const rawIssues = [
+  /* ----------------- CX727 ----------------- */
+  {
+    program:"CX727",
+    priority:"",
+    item:"Alert A14820600 allow Kostal send parts AD instead of AC for PP build event 26MY",
+    status:"In Progress",
+    next:"Confirm shipment of AD (D level) SCCM parts; ensure arrival before PP build",
+    target:"Need parts prior 09/12 (request by 09/05)",
+    modelYear:"26MY",
+    phase:"PP",
+    notes:`Need approved alert (got 9/01). 8/28: push approval ASAP. 9/09: Kostal ship by 9/11; Gil to confirm w/ Ivan.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"DCR 1595 ESC Button Removal TVM (Electronic Stability Control)",
+    status:"In Progress",
+    next:"Collect AVD data (3–4 wks) then late Sept analysis; confirm rejection or proceed",
+    target:"Earliest analysis 3rd/4th week Sept (orig 05/27/2025 timeline notes)",
+    modelYear:"27MY",
+    phase:"Concept",
+    notes:`CR C14781645 raised. FMVSS 101 evaluation & soft vs hard switch feasibility. Multiple follow‑ups (6/6,7/09,8/05,8/12,8/20). 8/20: Corrected signal found; data collection start. Need meetings (Scott, Sanyam, feature team).`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"HLS Chrome removal replace with MIC JA6 black ring (CR C14781693)",
+    status:"On Hold",
+    next:"Reject 26MY CR & create new 27MY CR + updated 2‑pager",
+    target:"TBD",
+    modelYear:"27MY",
+    phase:"OnHold",
+    notes:`Supplier quote pending (BCS). Move to 27MY (9/01). Follow‑ups 6/6 -> 9/01. Need new savings, new CR, reject old.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"FEDE req PEC JOB 2 evidence package",
+    status:"Closed",
+    next:"Add to BPR 09/08",
+    target:"Completed 08/28",
+    modelYear:"—",
+    phase:"Closure",
+    notes:`Evidence 100% uploaded 8/20. Multiple follow‑ups through 9/01 for inclusion in BPR.`
+  },
+  {
+    program:"CX727",
+    priority:"4",
+    item:"PWS De-chrome (CR C14799050) move to 27MY / maybe 26.5MY",
+    status:"In Progress",
+    next:"Modify 2‑pager & new CR for 27MY; evaluate 26.5MY or Job2 entry",
+    target:"—",
+    modelYear:"27MY",
+    phase:"Planning",
+    notes:`Finance vet pending; deck limitation (27MY not in WERS). 9/09: check 26.5MY TT build Dec; confirm with program & Sheryl.`
+  },
+  {
+    program:"CX727",
+    priority:"3",
+    item:"PWS Quality CR (C14675043)",
+    status:"Duplicate",
+    next:"Close duplicate entry",
+    target:"—",
+    modelYear:"—",
+    phase:"Rework",
+    notes:`B screen needed (due 8/29). 9/01: reminder for Alejandro approval. Marked duplicate.`
+  },
+  {
+    program:"CX727",
+    priority:"2",
+    item:"DCR 1597 PTS Chrome removal (CRID 1220351 / CR C14801318)",
+    status:"In Progress",
+    next:"Finance vet; CPDEF scheduling; decide 26.5MY vs 27MY; create alert if entering PP",
+    target:"Plan CPDEF (earlier ‘next week’); reevaluate after 9/09 meeting",
+    modelYear:"27MY",
+    phase:"Planning",
+    notes:`Cost save $1.2633/veh. Numerous finance vet follow‑ups (7/09→9/01). 9/09: Not in PP; consider obsolescence, illumination requirements.`
+  },
+  {
+    program:"CX727",
+    priority:"*",
+    item:"C14820681 PWS Quality Issue",
+    status:"Approved",
+    next:"Issue notice",
+    target:"—",
+    modelYear:"26MY",
+    phase:"Implementation",
+    notes:`CR approved 9/09; pending notice issuance.`
+  },
+  {
+    program:"CX727",
+    priority:"5",
+    item:"Alert A14800403 AUTHORIZE SCCM PTR @ CSAP AD level SW trial",
+    status:"In Progress",
+    next:"Run PTR trials (coordinate MP&L & EOL); confirm required quantity (32?)",
+    target:"PP 09/06/2025",
+    modelYear:"26MY",
+    phase:"PP",
+    notes:`Alert approved 8/12. PTR parts logistics; 9/09: parts ready (Sergio & Gerardo). Shortage of PCBs earlier.`
+  },
+  {
+    program:"CX727",
+    priority:"7",
+    item:"C14813133 26MY UPDATE SCCM AUTOSAR NM improve behavior (SW change DC1630)",
+    status:"In Progress",
+    next:"Get APCI approval; schedule & prepare for Six Eyes 09/30; verify assembly structure",
+    target:"Six Eyes 09/30",
+    modelYear:"26MY",
+    phase:"Implementation",
+    notes:`Supplier dev ~10 days. Need separate CR per MY. 9/09: push APCI approval.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"28MY N button monostable shifter",
+    status:"Open",
+    next:"Discuss in Justin's meeting (weekly); track decision",
+    target:"—",
+    modelYear:"28MY",
+    phase:"Concept",
+    notes:`Follow‑ups 8/12,8/20,9/01,9/09.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"28MY new assumptions (Neutral behavior, steering wheel, CL&U max defrost relocation)",
+    status:"Open",
+    next:"Review compatibility (S650 SW) w/ Yas & Jorge; document 3 proposed changes",
+    target:"—",
+    modelYear:"28MY",
+    phase:"Concept",
+    notes:`Meeting 8/25; 9/01 list captured.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"HLS MAX frost removal (28MY)",
+    status:"Open",
+    next:"Reschedule meeting with HLS & Gang Switch D&R + Ergo",
+    target:"—",
+    modelYear:"28MY",
+    phase:"Concept",
+    notes:`Need jewel indicator decision. 9/09: meeting reschedule.`
+  },
+  {
+    program:"CX727",
+    priority:"",
+    item:"VBOM for 26MY PPs",
+    status:"In Progress",
+    next:"Review & sign off; extend CSAP access through Oct",
+    target:"PP start next Wed (noted 9/09)",
+    modelYear:"26MY",
+    phase:"PP",
+    notes:`Support at CSAP first 2 days.`
+  },
+  {
+    program:"CX727",
+    priority:"6",
+    item:"PTR Pin Grenade SCCM (25RC APCI)",
+    status:"Urgent",
+    next:"Release APCI this week",
+    target:"ASAP",
+    modelYear:"25RC",
+    phase:"Release",
+    notes:`9/09 expedite.`
+  },
+
+  /* ----------------- P708 ----------------- */
+  {
+    program:"P708",
+    priority:"",
+    item:"C14734204 Fast Sleep Network + C14809616 Decrease SCCM Memory Size Catch Up",
+    status:"Implementation",
+    next:"Process cost catch-up; confirm new CR scheduling",
+    target:"05/02/25 (orig)",
+    modelYear:"26MY RC",
+    phase:"Implementation",
+    notes:`Notice released; CPDEF 8/05; approved 8/20; claims issued.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"C14744048 HLS RH cover update",
+    status:"Implementation",
+    next:"Monitor Feb secondary punch removal; validate timing with BCS",
+    target:"05/05/25 (orig) / Feb impl",
+    modelYear:"26MY",
+    phase:"Implementation",
+    notes:`PO released; secondary punch Feb; reviewed OK.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"Headlamp Switch Remove Dim+ / Dim- Buttons C14767049",
+    status:"Planning",
+    next:"Reschedule CPDEF for 27MY; update timing & EFF points",
+    target:"—",
+    modelYear:"27MY",
+    phase:"Planning",
+    notes:`2‑pager complete; should cost data gathering; moved to 27MY (9/01).`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"CRID1201454 De-Chrome window regulator switch - VP",
+    status:"Planning",
+    next:"Schedule CPDEF after finance vet; update 2‑pager with take rates",
+    target:"—",
+    modelYear:"27MY",
+    phase:"Planning",
+    notes:`Working with Sheryl; moved to 27MY 9/01.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"Check TVM Mega project HLS and ICP (DV evidence)",
+    status:"Documentation",
+    next:"Present evidence to Sean (Engineering Excellence)",
+    target:"—",
+    modelYear:"—",
+    phase:"Documentation",
+    notes:`Evidence uploaded; need email to Kim; presentation pending.`
+  },
+  {
+    program:"P708",
+    priority:"1",
+    item:"4th Variant ICP",
+    status:"In Progress",
+    next:"Follow up drawing release (Sept 12); PO review (Sree); timing reduction",
+    target:"Notice released 9/01",
+    modelYear:"26MY",
+    phase:"Implementation",
+    notes:`Need internal/external comm emails; DI requested; quote review in progress.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"AAGBH,BYPAK combination (27MY) for 14711",
+    status:"Closed",
+    next:"—",
+    target:"Released",
+    modelYear:"27MY",
+    phase:"Closure",
+    notes:`CR created & released.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"PMT 2 BOM Issues (27MY) - create CR",
+    status:"Open",
+    next:"Create CR & close log with number",
+    target:"—",
+    modelYear:"27MY",
+    phase:"Planning",
+    notes:`8/20 create CR; 9/01 add CR number & close.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"Key life test push nut change IP assembly",
+    status:"Open",
+    next:"Clarify ownership; add HVAC D&R; capture Frank request",
+    target:"—",
+    modelYear:"—",
+    phase:"Validation",
+    notes:`Need trial before build phases; follow‑ups 8/20,9/01.`
+  },
+  {
+    program:"P708",
+    priority:"",
+    item:"OAC support",
+    status:"Open",
+    next:"Get exact support days & specs (Dalia -> Lubna)",
+    target:"—",
+    modelYear:"—",
+    phase:"Launch",
+    notes:`8/20 waiting schedule.`
+  },
+
+  /* ----------------- HVF ----------------- */
+  {
+    program:"HVF",
+    priority:"",
+    item:"Switches fasteners list",
+    status:"In Progress",
+    next:"Complete remaining fasteners & share with Dalia",
+    target:"—",
+    modelYear:"—",
+    phase:"Documentation",
+    notes:`Researching FedeBOM; SCCM done.`
+  },
+  {
+    program:"HVF",
+    priority:"",
+    item:"Owner's manual content review (Starting & Stopping Engine) F53F59 H567 VN127",
+    status:"Closed",
+    next:"—",
+    target:"Feedback provided",
+    modelYear:"—",
+    phase:"Closure",
+    notes:`Review completed.`
+  },
+  {
+    program:"HVF",
+    priority:"",
+    item:"31MY H768 (FNV3.4) MP1 5/2031 Pre-PS contact & switch list",
+    status:"Open",
+    next:"Define contacts; compile switch list migration",
+    target:"—",
+    modelYear:"31MY",
+    phase:"Planning",
+    notes:`Need change understanding first.`
+  },
+
+  /* ----------------- General ----------------- */
+  {
+    program:"General",
+    priority:"",
+    item:"2026CY P708 Launch support slow build",
+    status:"Planning",
+    next:"Budget travel & Canada work permits (2 trips added)",
+    target:"2026CY",
+    modelYear:"2026CY",
+    phase:"Launch",
+    notes:`Support planning.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"CPRs (PWS CX727 21MY-23MY)",
+    status:"Rework",
+    next:"Determine follow-up after business case rejection",
+    target:"—",
+    modelYear:"—",
+    phase:"Rework",
+    notes:`Business case rejected 7/09; JIRA Stage 4.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"Process improvements - Engineering excellence template",
+    status:"In Progress",
+    next:"Present 9/23 staff meeting (confirm); fill FOM template",
+    target:"9/23",
+    modelYear:"—",
+    phase:"Implementation",
+    notes:`Working with Jennifer & José; file shared with Kim.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"Trainings Problem solving Global",
+    status:"In Progress",
+    next:"Complete remaining exams ( >50% after 8/12 )",
+    target:"07/30/25",
+    modelYear:"—",
+    phase:"Personal",
+    notes:`1 test completed 8/20; continue 9/01.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"Trainings SPS FOM",
+    status:"Open",
+    next:"Finish global trainings first then SPS/FOM",
+    target:"—",
+    modelYear:"—",
+    phase:"Personal",
+    notes:`9/01 prerequisite note.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"IDP update",
+    status:"Closed",
+    next:"—",
+    target:"Uploaded",
+    modelYear:"—",
+    phase:"Personal",
+    notes:`IDP updated in HCM.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"Objectives and self-assessment",
+    status:"Closed",
+    next:"—",
+    target:"Uploaded",
+    modelYear:"—",
+    phase:"Personal",
+    notes:`Submitted before mid-day deadline.`
+  },
+  {
+    program:"General",
+    priority:"",
+    item:"Self-assessment TMM",
+    status:"Open",
+    next:"Complete self-assessment",
+    target:"—",
+    modelYear:"—",
+    phase:"Personal",
+    notes:`9/01 pending completion.`
+  }
+];
+
+// Build filter sets
+const phaseSet = new Set();
+const statusSet = new Set();
+const mySet = new Set();
+
+rawIssues.forEach(r=>{
+  if(r.phase) phaseSet.add(r.phase);
+  if(r.status) statusSet.add(r.status);
+  if(r.modelYear && r.modelYear !== "—") mySet.add(r.modelYear);
+});
+
+const selPhase = document.getElementById('filterPhase');
+[...phaseSet].sort().forEach(p=>{
+  const o=document.createElement('option');o.value=p;o.textContent=p;selPhase.appendChild(o);
+});
+const selStatus = document.getElementById('filterStatus');
+[...statusSet].sort().forEach(s=>{
+  const o=document.createElement('option');o.value=s;o.textContent=s;selStatus.appendChild(o);
+});
+const selMY = document.getElementById('filterMY');
+[...mySet].sort().forEach(m=>{
+  const o=document.createElement('option');o.value=m;o.textContent=m;selMY.appendChild(o);
+});
+
+const tbody = document.querySelector('#issuesTable tbody');
+const statsEl = document.getElementById('stats');
+
+function render(){
+  const fp=document.getElementById('filterProgram').value;
+  const ph=document.getElementById('filterPhase').value;
+  const st=document.getElementById('filterStatus').value;
+  const my=document.getElementById('filterMY').value;
+  const q=document.getElementById('searchBox').value.toLowerCase();
+  const showClosed=document.getElementById('showClosed').value==="1";
+
+  tbody.innerHTML='';
+  let shown=0;
+  rawIssues.forEach((r,index)=>{
+    if(fp && r.program!==fp) return;
+    if(ph && r.phase!==ph) return;
+    if(st && r.status!==st) return;
+    if(my && r.modelYear!==my) return;
+    if(!showClosed && (r.status==="Closed"||r.status==="Closure")) return;
+    const hay=[r.item,r.notes,r.next,r.status,r.phase,r.modelYear].join(' ').toLowerCase();
+    if(q && !hay.includes(q)) return;
+
+    // Debug: Log the current data for this issue
+    if (r.notes || r.next) {
+      console.log(`Issue ${index}: Notes="${r.notes}", Next="${r.next}"`);
+    }
+
+    const tr=document.createElement('tr');
+
+    const phaseCell = `<span class="phase-badge phase-${r.phase||'NA'}">${r.phase||''}</span> <span class="badge-my">${r.modelYear||''}</span>`;
+    
+    // Create notes section with existing notes and add comment functionality
+    const displayNotes = (notes) => {
+      if (!notes) return '';
+      
+      // Split notes by pipe separator to handle individual comments
+      const comments = notes.split(' | ');
+      return comments.map((comment, commentIndex) => {
+        // Check if comment has timestamp format [MM/DD/YYYY HH:MM]
+        const timestampMatch = comment.match(/^\[(\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2})\](.*)$/);
+        
+        if (timestampMatch) {
+          const timestamp = timestampMatch[1];
+          const commentText = timestampMatch[2].trim();
+          return `
+            <div style="border-bottom:1px solid var(--border);padding:.3rem 0;margin-bottom:.3rem;">
+              <div style="font-size:.55rem;color:var(--accent);margin-bottom:.2rem;">[${timestamp}]</div>
+              <div id="commentText_${index}_${commentIndex}" style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(commentText)}</div>
+              <textarea id="editComment_${index}_${commentIndex}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:40px;margin-bottom:.3rem;">${escapeHTML(commentText)}</textarea>
+              <div style="display:flex;gap:.3rem;">
+                <button onclick="editComment(${index}, ${commentIndex})" id="editBtn_${index}_${commentIndex}" style="background:#ffa500;color:#000;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">✏️ Edit</button>
+                <button onclick="saveComment(${index}, ${commentIndex})" id="saveBtn_${index}_${commentIndex}" style="display:none;background:var(--ok);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">💾 Save</button>
+                <button onclick="cancelEdit(${index}, ${commentIndex})" id="cancelBtn_${index}_${commentIndex}" style="display:none;background:var(--border);color:var(--txt);border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">❌ Cancel</button>
+                <button onclick="deleteComment(${index}, ${commentIndex})" style="background:var(--danger);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🗑️ Delete</button>
+              </div>
+            </div>
+          `;
+        } else {
+          // Legacy comment without timestamp
+          return `
+            <div style="border-bottom:1px solid var(--border);padding:.3rem 0;margin-bottom:.3rem;">
+              <div style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(comment)}</div>
+            </div>
+          `;
+        }
+      }).join('');
+    };
+    
+    // Create next steps section with existing steps and add comment functionality
+    const displayNextSteps = (nextSteps) => {
+      if (!nextSteps) return '';
+      
+      // Split next steps by pipe separator to handle individual comments
+      const steps = nextSteps.split(' | ');
+      return steps.map((step, stepIndex) => {
+        // Check if step has timestamp format [MM/DD/YYYY HH:MM]
+        const timestampMatch = step.match(/^\[(\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2})\](.*)$/);
+        
+        if (timestampMatch) {
+          const timestamp = timestampMatch[1];
+          const stepText = timestampMatch[2].trim();
+          return `
+            <div style="border-bottom:1px solid var(--border);padding:.3rem 0;margin-bottom:.3rem;">
+              <div style="font-size:.55rem;color:var(--accent);margin-bottom:.2rem;">[${timestamp}]</div>
+              <div id="nextStepText_${index}_${stepIndex}" style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(stepText)}</div>
+              <textarea id="editNextStep_${index}_${stepIndex}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:40px;margin-bottom:.3rem;">${escapeHTML(stepText)}</textarea>
+              <div style="display:flex;gap:.3rem;">
+                <button onclick="editNextStep(${index}, ${stepIndex})" id="editNextStepBtn_${index}_${stepIndex}" style="background:#ffa500;color:#000;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">✏️ Edit</button>
+                <button onclick="saveNextStep(${index}, ${stepIndex})" id="saveNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--ok);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">💾 Save</button>
+                <button onclick="cancelEditNextStep(${index}, ${stepIndex})" id="cancelNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--border);color:var(--txt);border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">❌ Cancel</button>
+                <button onclick="deleteNextStep(${index}, ${stepIndex})" style="background:var(--danger);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🗑️ Delete</button>
+              </div>
+            </div>
+          `;
+        } else {
+          // Legacy step without timestamp
+          return `
+            <div style="border-bottom:1px solid var(--border);padding:.3rem 0;margin-bottom:.3rem;">
+              <div style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(step)}</div>
+            </div>
+          `;
+        }
+      }).join('');
+    };
+    
+    const notesContent = `
+      <details ${r.notes ? 'open' : ''}>
+        <summary>${r.notes ? 'View Notes & Add Comment' : 'Add Comment'}</summary>
+        <div style="max-height:300px;overflow-y:auto;">
+          ${r.notes ? displayNotes(r.notes) : ''}
+          <div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.5rem;">
+            <textarea id="newComment_${index}" placeholder="Add a new comment..." style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:60px;resize:vertical;"></textarea>
+            <button onclick="addComment(${index})" style="background:var(--accent);color:#fff;border:none;padding:.25rem .5rem;border-radius:3px;font-size:.55rem;margin-top:.3rem;cursor:pointer;">Add Comment</button>
+          </div>
+        </div>
+      </details>
+    `;
+    
+    const nextStepsContent = `
+      <details ${r.next ? 'open' : ''}>
+        <summary>${r.next ? 'View Steps & Add Update' : 'Add Next Step'}</summary>
+        <div style="max-height:300px;overflow-y:auto;">
+          ${r.next ? displayNextSteps(r.next) : ''}
+          <div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.5rem;">
+            <textarea id="newNextStep_${index}" placeholder="Add a next step update..." style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:60px;resize:vertical;"></textarea>
+            <button onclick="addNextStep(${index})" style="background:var(--accent);color:#fff;border:none;padding:.25rem .5rem;border-radius:3px;font-size:.55rem;margin-top:.3rem;cursor:pointer;">Add Step</button>
+          </div>
+        </div>
+      </details>
+    `;
+    
+    // Priority mapping and display
+    let priorityDisplay='';
+    let priorityCell='';
+    if(r.priority){
+      const map={
+        'Urgent and Important':{num:1,cls:'priority-1'},
+        'Important but Not Urgent':{num:2,cls:'priority-2'},
+        'Urgent but Not Important':{num:3,cls:'priority-3'},
+        'Neither Urgent nor Important':{num:4,cls:'priority-4'}
+      };
+      if(map[r.priority]){
+        const m=map[r.priority];
+        priorityDisplay=`<span class="priority-badge ${m.cls}" title="${escapeHTML(r.priority)}">${m.num}</span>`;
+      } else {
+        // fallback for legacy values
+        priorityDisplay=escapeHTML(r.priority);
+      }
+      priorityCell = `
+        <span id="priorityDisplay_${index}" onclick="editPriority(${index})" style="cursor:pointer;" title="Click to edit priority">${priorityDisplay}</span>
+        <select id="priorityEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="savePriority(${index})" onblur="cancelPriorityEdit(${index})">
+          <option value="">Select...</option>
+          <option value="Urgent and Important">Urgent and Important</option>
+          <option value="Important but Not Urgent">Important but Not Urgent</option>
+          <option value="Urgent but Not Important">Urgent but Not Important</option>
+          <option value="Neither Urgent nor Important">Neither Urgent nor Important</option>
+        </select>
+      `;
+    } else {
+      priorityCell = `
+        <button id="addPriorityBtn_${index}" onclick="editPriority(${index})" style="background:var(--accent);color:#fff;border:none;padding:.25rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;">Add Priority</button>
+        <select id="priorityEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="savePriority(${index})" onblur="cancelPriorityEdit(${index})">
+          <option value="">Select...</option>
+          <option value="Urgent and Important">Urgent and Important</option>
+          <option value="Important but Not Urgent">Important but Not Urgent</option>
+          <option value="Urgent but Not Important">Urgent but Not Important</option>
+          <option value="Neither Urgent nor Important">Neither Urgent nor Important</option>
+        </select>
+      `;
+    }
+
+    tr.innerHTML=`
+      <td>
+        <span id="phaseDisplay_${index}" onclick="editPhase(${index})" style="cursor:pointer;text-decoration:underline;color:var(--accent);">${phaseCell}</span>
+        <select id="phaseEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="savePhase(${index})" onblur="cancelPhaseEdit(${index})">
+          <option value="">Select...</option>
+          <option value="Concept">Concept</option>
+          <option value="On Hold">On Hold</option>
+          <option value="PP">PP</option>
+          <option value="TT">TT</option>
+          <option value="MP1">MP1</option>
+          <option value="MP2">MP2</option>
+          <option value="RC">RC</option>
+          <option value="Planning">Planning</option>
+          <option value="Personal">Personal</option>
+        </select>
+      </td>
+      <td>${r.program}</td>
+      <td>${priorityCell}</td>
+      <td>${r.item}</td>
+      <td class="status status-${r.status.replace(/\s/g,'')}">
+        <span id="statusDisplay_${index}" onclick="editStatus(${index})" style="cursor:pointer;text-decoration:underline;color:var(--accent);">${r.status}</span>
+        <select id="statusEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="saveStatus(${index})" onblur="cancelStatusEdit(${index})">
+          <option value="">Select...</option>
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="On Hold">On Hold</option>
+          <option value="Approved">Approved</option>
+          <option value="Closed">Closed</option>
+          <option value="Duplicate">Duplicate</option>
+          <option value="Urgent">Urgent</option>
+          <option value="Implementation">Implementation</option>
+          <option value="Planning">Planning</option>
+        </select>
+      </td>
+      <td>${nextStepsContent}</td>
+      <td>${r.target||''}</td>
+      <td>${notesContent}</td>
+    `;
+    tbody.appendChild(tr);
+    shown++;
+  });
+  statsEl.textContent = `Shown: ${shown}  | Total: ${rawIssues.length}`;
+}
+
+function escapeHTML(s){
+  return s.replace(/[&<>"]/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// LocalStorage functions for persistence
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('issuesData', JSON.stringify(rawIssues));
+    console.log('Data saved to localStorage');
+  } catch (e) {
+    console.error('Failed to save to localStorage:', e);
+  }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('issuesData');
+    if (saved) {
+      const loadedData = JSON.parse(saved);
+      // If saved list longer than current seed, append new ones
+      if (loadedData.length > rawIssues.length) {
+        console.log('Appending', loadedData.length - rawIssues.length, 'persisted new issues');
+      }
+      loadedData.forEach((savedIssue, index) => {
+        if (rawIssues[index]) {
+          // Update mutable fields (notes, next, priority, status, etc.) in-place
+          Object.assign(rawIssues[index], {
+            notes: savedIssue.notes || rawIssues[index].notes || '',
+            next: savedIssue.next || rawIssues[index].next || '',
+            priority: savedIssue.priority || rawIssues[index].priority || '',
+            status: savedIssue.status || rawIssues[index].status || '',
+            target: savedIssue.target || rawIssues[index].target || '',
+            modelYear: savedIssue.modelYear || rawIssues[index].modelYear || '',
+            phase: savedIssue.phase || rawIssues[index].phase || ''
+          });
+        } else {
+          // New issue that did not exist in original seed -> push
+          rawIssues.push(savedIssue);
+        }
+      });
+      console.log('Data loaded from localStorage');
+      return true;
+    }
+  } catch (e) {
+    console.error('Failed to load from localStorage:', e);
+  }
+  return false;
+}
+
+function clearStoredData() {
+  if (confirm('Are you sure you want to clear all stored comments and next steps? This cannot be undone.')) {
+    localStorage.removeItem('issuesData');
+    location.reload(); // Reload page to restore original data
+  }
+}
+
+// Function to add a comment to an issue
+function addComment(issueIndex) {
+  const commentTextarea = document.getElementById(`newComment_${issueIndex}`);
+  const newComment = commentTextarea.value.trim();
+  
+  if (!newComment) {
+    alert('Please enter a comment before adding.');
+    return;
+  }
+  
+  // Get current date for timestamp
+  const now = new Date();
+  const timestamp = (now.getMonth()+1).toString().padStart(2,'0') + '/' + 
+                   now.getDate().toString().padStart(2,'0') + '/' + 
+                   now.getFullYear() + ' ' + 
+                   now.getHours().toString().padStart(2,'0') + ':' + 
+                   now.getMinutes().toString().padStart(2,'0');
+  
+  // Format the new comment with timestamp
+  const formattedComment = `[${timestamp}] ${newComment}`;
+  
+  // Add to existing notes or create new notes
+  if (rawIssues[issueIndex].notes) {
+    rawIssues[issueIndex].notes += ` | ${formattedComment}`;
+  } else {
+    rawIssues[issueIndex].notes = formattedComment;
+  }
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Debug: Log the updated notes
+  console.log('Updated notes for issue', issueIndex, ':', rawIssues[issueIndex].notes);
+  
+  // Clear the textarea
+  commentTextarea.value = '';
+  
+  // Re-render the table to show the updated notes
+  render();
+}
+
+// Function to edit a comment
+function editComment(issueIndex, commentIndex) {
+  const textDiv = document.getElementById(`commentText_${issueIndex}_${commentIndex}`);
+  const textarea = document.getElementById(`editComment_${issueIndex}_${commentIndex}`);
+  const editBtn = document.getElementById(`editBtn_${issueIndex}_${commentIndex}`);
+  const saveBtn = document.getElementById(`saveBtn_${issueIndex}_${commentIndex}`);
+  const cancelBtn = document.getElementById(`cancelBtn_${issueIndex}_${commentIndex}`);
+  
+  textDiv.style.display = 'none';
+  textarea.style.display = 'block';
+  editBtn.style.display = 'none';
+  saveBtn.style.display = 'inline-block';
+  cancelBtn.style.display = 'inline-block';
+  
+  textarea.focus();
+}
+
+// Function to save edited comment
+function saveComment(issueIndex, commentIndex) {
+  const textarea = document.getElementById(`editComment_${issueIndex}_${commentIndex}`);
+  const newText = textarea.value.trim();
+  
+  if (!newText) {
+    alert('Comment cannot be empty.');
+    return;
+  }
+  
+  // Get current comments array
+  const comments = rawIssues[issueIndex].notes.split(' | ');
+  
+  // Update the specific comment, preserving timestamp
+  const timestampMatch = comments[commentIndex].match(/^(\[[^\]]+\])(.*)$/);
+  if (timestampMatch) {
+    comments[commentIndex] = timestampMatch[1] + ' ' + newText;
+  } else {
+    comments[commentIndex] = newText;
+  }
+  
+  // Update the notes
+  rawIssues[issueIndex].notes = comments.join(' | ');
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+// Function to cancel edit
+function cancelEdit(issueIndex, commentIndex) {
+  const textDiv = document.getElementById(`commentText_${issueIndex}_${commentIndex}`);
+  const textarea = document.getElementById(`editComment_${issueIndex}_${commentIndex}`);
+  const editBtn = document.getElementById(`editBtn_${issueIndex}_${commentIndex}`);
+  const saveBtn = document.getElementById(`saveBtn_${issueIndex}_${commentIndex}`);
+  const cancelBtn = document.getElementById(`cancelBtn_${issueIndex}_${commentIndex}`);
+  
+  textDiv.style.display = 'block';
+  textarea.style.display = 'none';
+  editBtn.style.display = 'inline-block';
+  saveBtn.style.display = 'none';
+  cancelBtn.style.display = 'none';
+}
+
+// Function to delete a comment
+function deleteComment(issueIndex, commentIndex) {
+  if (!confirm('Are you sure you want to delete this comment?')) {
+    return;
+  }
+  
+  // Get current comments array
+  const comments = rawIssues[issueIndex].notes.split(' | ');
+  
+  // Remove the specific comment
+  comments.splice(commentIndex, 1);
+  
+  // Update the notes (empty string if no comments left)
+  rawIssues[issueIndex].notes = comments.length > 0 ? comments.join(' | ') : '';
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+// Functions for Next Steps functionality
+// Function to add a next step to an issue
+function addNextStep(issueIndex) {
+  const stepTextarea = document.getElementById(`newNextStep_${issueIndex}`);
+  const newStep = stepTextarea.value.trim();
+  
+  if (!newStep) {
+    alert('Please enter a next step before adding.');
+    return;
+  }
+  
+  // Get current date for timestamp
+  const now = new Date();
+  const timestamp = (now.getMonth()+1).toString().padStart(2,'0') + '/' + 
+                   now.getDate().toString().padStart(2,'0') + '/' + 
+                   now.getFullYear() + ' ' + 
+                   now.getHours().toString().padStart(2,'0') + ':' + 
+                   now.getMinutes().toString().padStart(2,'0');
+  
+  // Format the new step with timestamp
+  const formattedStep = `[${timestamp}] ${newStep}`;
+  
+  // Add to existing next steps or create new next steps
+  if (rawIssues[issueIndex].next) {
+    rawIssues[issueIndex].next += ` | ${formattedStep}`;
+  } else {
+    rawIssues[issueIndex].next = formattedStep;
+  }
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Debug: Log the updated next steps
+  console.log('Updated next steps for issue', issueIndex, ':', rawIssues[issueIndex].next);
+  
+  // Clear the textarea
+  stepTextarea.value = '';
+  
+  // Re-render the table to show the updated next steps
+  render();
+}
+
+// Function to edit a next step
+function editNextStep(issueIndex, stepIndex) {
+  const textDiv = document.getElementById(`nextStepText_${issueIndex}_${stepIndex}`);
+  const textarea = document.getElementById(`editNextStep_${issueIndex}_${stepIndex}`);
+  const editBtn = document.getElementById(`editNextStepBtn_${issueIndex}_${stepIndex}`);
+  const saveBtn = document.getElementById(`saveNextStepBtn_${issueIndex}_${stepIndex}`);
+  const cancelBtn = document.getElementById(`cancelNextStepBtn_${issueIndex}_${stepIndex}`);
+  
+  textDiv.style.display = 'none';
+  textarea.style.display = 'block';
+  editBtn.style.display = 'none';
+  saveBtn.style.display = 'inline-block';
+  cancelBtn.style.display = 'inline-block';
+  
+  textarea.focus();
+}
+
+// Function to save edited next step
+function saveNextStep(issueIndex, stepIndex) {
+  const textarea = document.getElementById(`editNextStep_${issueIndex}_${stepIndex}`);
+  const newText = textarea.value.trim();
+  
+  if (!newText) {
+    alert('Next step cannot be empty.');
+    return;
+  }
+  
+  // Get current steps array
+  const steps = rawIssues[issueIndex].next.split(' | ');
+  
+  // Update the specific step, preserving timestamp
+  const timestampMatch = steps[stepIndex].match(/^(\[[^\]]+\])(.*)$/);
+  if (timestampMatch) {
+    steps[stepIndex] = timestampMatch[1] + ' ' + newText;
+  } else {
+    steps[stepIndex] = newText;
+  }
+  
+  // Update the next steps
+  rawIssues[issueIndex].next = steps.join(' | ');
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+// Function to cancel edit next step
+function cancelEditNextStep(issueIndex, stepIndex) {
+  const textDiv = document.getElementById(`nextStepText_${issueIndex}_${stepIndex}`);
+  const textarea = document.getElementById(`editNextStep_${issueIndex}_${stepIndex}`);
+  const editBtn = document.getElementById(`editNextStepBtn_${issueIndex}_${stepIndex}`);
+  const saveBtn = document.getElementById(`saveNextStepBtn_${issueIndex}_${stepIndex}`);
+  const cancelBtn = document.getElementById(`cancelNextStepBtn_${issueIndex}_${stepIndex}`);
+  
+  textDiv.style.display = 'block';
+  textarea.style.display = 'none';
+  editBtn.style.display = 'inline-block';
+  saveBtn.style.display = 'none';
+  cancelBtn.style.display = 'none';
+}
+
+// Function to delete a next step
+function deleteNextStep(issueIndex, stepIndex) {
+  if (!confirm('Are you sure you want to delete this next step?')) {
+    return;
+  }
+  
+  // Get current steps array
+  const steps = rawIssues[issueIndex].next.split(' | ');
+  
+  // Remove the specific step
+  steps.splice(stepIndex, 1);
+  
+  // Update the next steps (empty string if no steps left)
+  rawIssues[issueIndex].next = steps.length > 0 ? steps.join(' | ') : '';
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+// Functions for editing Implementation Phase
+function editPhase(index) {
+  const display = document.getElementById(`phaseDisplay_${index}`);
+  const edit = document.getElementById(`phaseEdit_${index}`);
+  
+  // Set current value in dropdown
+  const currentPhase = rawIssues[index].phase || '';
+  edit.value = currentPhase;
+  
+  // Toggle visibility
+  display.style.display = 'none';
+  edit.style.display = 'block';
+  edit.focus();
+}
+
+function savePhase(index) {
+  const edit = document.getElementById(`phaseEdit_${index}`);
+  const newPhase = edit.value;
+  
+  // Update the data
+  rawIssues[index].phase = newPhase;
+  
+  // Save to localStorage
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+function cancelPhaseEdit(index) {
+  const display = document.getElementById(`phaseDisplay_${index}`);
+  const edit = document.getElementById(`phaseEdit_${index}`);
+  
+  // Revert visibility without saving
+  display.style.display = 'inline';
+  edit.style.display = 'none';
+}
+
+// Functions for editing Priority
+function editPriority(index) {
+  const display = document.getElementById(`priorityDisplay_${index}`);
+  const addBtn = document.getElementById(`addPriorityBtn_${index}`);
+  const edit = document.getElementById(`priorityEdit_${index}`);
+  
+  // Set current value in dropdown
+  const currentPriority = rawIssues[index].priority || '';
+  edit.value = currentPriority;
+  
+  // Hide display/button and show dropdown
+  if (display) display.style.display = 'none';
+  if (addBtn) addBtn.style.display = 'none';
+  edit.style.display = 'block';
+  edit.focus();
+}
+
+function savePriority(index) {
+  const edit = document.getElementById(`priorityEdit_${index}`);
+  const newPriority = edit.value;
+  
+  // Update the data
+  rawIssues[index].priority = newPriority;
+  
+  // Save to localStorage
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+function cancelPriorityEdit(index) {
+  const display = document.getElementById(`priorityDisplay_${index}`);
+  const addBtn = document.getElementById(`addPriorityBtn_${index}`);
+  const edit = document.getElementById(`priorityEdit_${index}`);
+  
+  // Revert visibility without saving
+  if (display) display.style.display = 'inline';
+  if (addBtn) addBtn.style.display = 'inline-block';
+  edit.style.display = 'none';
+}
+
+// Functions for editing Status
+function editStatus(index) {
+  const display = document.getElementById(`statusDisplay_${index}`);
+  const edit = document.getElementById(`statusEdit_${index}`);
+  
+  // Set current value in dropdown
+  const currentStatus = rawIssues[index].status || '';
+  edit.value = currentStatus;
+  
+  // Toggle visibility
+  display.style.display = 'none';
+  edit.style.display = 'block';
+  edit.focus();
+}
+
+function saveStatus(index) {
+  const edit = document.getElementById(`statusEdit_${index}`);
+  const newStatus = edit.value;
+  
+  // Update the data
+  rawIssues[index].status = newStatus;
+  
+  // Save to localStorage
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+function cancelStatusEdit(index) {
+  const display = document.getElementById(`statusDisplay_${index}`);
+  const edit = document.getElementById(`statusEdit_${index}`);
+  
+  // Revert visibility without saving
+  display.style.display = 'inline';
+  edit.style.display = 'none';
+}
+
+document.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',render));
+
+// Load saved data from localStorage on page load
+loadFromLocalStorage();
+
+render();
+
+// Add New Issue Modal Logic
+const addIssueBtn = document.getElementById('addIssueBtn');
+const addIssueModal = document.getElementById('addIssueModal');
+const cancelAddIssue = document.getElementById('cancelAddIssue');
+const addIssueForm = document.getElementById('addIssueForm');
+
+addIssueBtn.addEventListener('click',()=>{
+  addIssueModal.style.display='flex';
+});
+cancelAddIssue.addEventListener('click',()=>{
+  addIssueModal.style.display='none';
+  addIssueForm.reset();
+});
+addIssueModal.addEventListener('click',e=>{
+  if(e.target===addIssueModal){
+    addIssueModal.style.display='none';
+    addIssueForm.reset();
+  }
+});
+
+addIssueForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  // Get values
+  const program = document.getElementById('newProgram').value;
+  const priority = document.getElementById('newPriority').value;
+  const item = document.getElementById('newItem').value;
+  const status = document.getElementById('newStatus').value;
+  const next = document.getElementById('newNext').value;
+  const modelYear = document.getElementById('newMY').value;
+  const phase = document.getElementById('newPhase').value;
+  // Add to rawIssues
+  const now = new Date();
+  const timestamp = (now.getMonth()+1).toString().padStart(2,'0') + '/' +
+                    now.getDate().toString().padStart(2,'0') + '/' +
+                    now.getFullYear() + ' ' +
+                    now.getHours().toString().padStart(2,'0') + ':' +
+                    now.getMinutes().toString().padStart(2,'0');
+  rawIssues.unshift({
+    program,
+    priority,
+    item,
+    status,
+    next,
+    target:'',
+    modelYear,
+    phase,
+    notes:`[${timestamp}] Issue created`
+  });
+  
+  // Save to localStorage for persistence
+  saveToLocalStorage();
+  
+  render();
+  addIssueModal.style.display='none';
+  addIssueForm.reset();
+});
+</script>
+</body>
+</html>
