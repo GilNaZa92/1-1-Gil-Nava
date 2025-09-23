@@ -6,171 +6,142 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
 :root {
-  --bg:#111;--panel:#1c1f24;--panel-alt:#242a30;--txt:#eee;--accent:#4da3ff;
-
-<!-- Add New Issue Button and Modal -->
-<div style="margin:1rem 1.25rem 0 1.25rem;">
-  <button id="addIssueBtn" style="background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;font-size:.8rem;cursor:pointer;">Add New Issue</button>
-</div>
-
-<div id="addIssueModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:var(--panel);padding:2rem 2.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0008;position:relative;">
-    <h2 style="margin-top:0;font-size:1rem;">Add New Issue</h2>
-    <form id="addIssueForm">
-      <div style="margin-bottom:.7rem;">
-        <label for="newProgram">Program</label>
-        <select id="newProgram" required style="width:100%;background:var(--panel-alt);color:var(--txt);">
-          <option value="">Select...</option>
-          <option>CX727</option>
-          <option>P708</option>
-          <option>HVF</option>
-          <option>General</option>
-        </select>
-      </div>
-      <div style="margin-bottom:.7rem;">
-        <label for="newPriority">Priority</label>
-        <input id="newPriority" type="text" style="width:100%;background:var(--panel-alt);color:var(--txt);" />
-      </div>
-      <div style="margin-bottom:.7rem;">
-        <label for="newItem">Item Description</label>
-        <input id="newItem" type="text" required style="width:100%;background:var(--panel-alt);color:var(--txt);" />
-      </div>
-      <div style="margin-bottom:.7rem;">
-        <label for="newStatus">Status</label>
-        <select id="newStatus" required style="width:100%;background:var(--panel-alt);color:var(--txt);">
-          <option value="">Select...</option>
-          <option>Open</option>
-          <option>In Progress</option>
-          <option>On Hold</option>
-          <option>Approved</option>
-          <option>Closed</option>
-          <option>Duplicate</option>
-          <option>Urgent</option>
-          <option>Implementation</option>
-          <option>Planning</option>
-        </select>
-      </div>
-      <div style="margin-bottom:.7rem;">
-        <label for="newNext">Next Steps</label>
-        <input id="newNext" type="text" style="width:100%;background:var(--panel-alt);color:var(--txt);" />
-      </div>
-      <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.2rem;">
-        <button type="button" id="cancelAddIssue" style="background:var(--border);color:var(--txt);border:none;padding:.45rem 1.1rem;border-radius:5px;">Cancel</button>
-        <button type="submit" style="background:var(--accent);color:#fff;border:none;padding:.45rem 1.1rem;border-radius:5px;">Add Issue</button>
-      </div>
-    </form>
-  </div>
-</div>
-  --warn:#ffcc33;--danger:#ff5f56;--ok:#5fbf6a;--hold:#b084ff;--border:#333;
-  --phase:#2d3742;--font:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  --bg: #111;
+  --panel: #1c1f24;
+  --panel-alt: #242a30;
+  --txt: #eee;
+  --accent: #4da3ff;
+  --warn: #ffcc33;
+  --danger: #ff5f56;
+  --ok: #5fbf6a;
+  --hold: #b084ff;
+  --border: #333;
+  --phase: #2d3742;
+  --font: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  --font-scale: 1;
 }
-*{box-sizing:border-box;font-family:var(--font)}
-body{margin:0;background:var(--bg);color:var(--txt);line-height:1.3;}
-header{padding:1rem 1.25rem;background:#0b0d10;display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end}
-h1{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:.5px;}
-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;opacity:.85;display:block;margin-bottom:2px}
-select,input[type="search"]{background:var(--panel);color:var(--txt);border:1px solid var(--border);padding:.45rem .55rem;border-radius:4px;font-size:.7rem;min-width:132px;}
-input[type="search"]{width:230px}
-table{width:100%;border-collapse:collapse;font-size:.64rem;}
-th,td{padding:.45rem .55rem;vertical-align:top;border-bottom:1px solid var(--border);}
-th{position:sticky;top:0;background:#0f1419;z-index:5;text-align:left;font-weight:600;}
-tbody tr:nth-child(even){background:var(--panel);}
-tbody tr:nth-child(odd){background:var(--panel-alt);}
-.phase-badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.52rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-.priority-badge{display:inline-block;min-width:18px;text-align:center;padding:2px 6px;border-radius:4px;font-size:.55rem;font-weight:700;letter-spacing:.04em}
-.priority-1{background:#b30000;color:#fff;}
-.priority-2{background:#ff8c00;color:#222;}
-.priority-3{background:#1b6e1b;color:#fff;}
-.priority-4{background:#1e4d80;color:#fff;}
-.phase-Concept{background:#2b3f66}
-.phase-Planning{background:#254d5e}
-.phase-PP{background:#5a3d7a}
-.phase-Implementation{background:#375d2b}
-.phase-Validation{background:#6b5220}
-.phase-Release{background:#5b2f2f}
-.phase-Closure{background:#2f4f3b}
-.phase-Documentation{background:#4a3f52}
-.phase-Launch{background:#3d4a6f}
-.phase-Rework{background:#6f3d3d}
-.phase-OnHold{background:#5a4b00}
-.phase-Personal{background:#3a4055}
-.status{font-weight:600;}
-.status-Open{color:var(--warn)}
-.status-InProgress{color:var(--accent)}
-.status-OnHold{color:var(--hold)}
-.status-Approved{color:var(--ok)}
-.status-Closed{color:var(--ok)}
-.status-Urgent{color:var(--danger)}
-.details-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:.6rem;padding:0;text-decoration:underline}
-details{margin-top:.35rem}
-details summary{cursor:pointer;color:var(--accent);font-size:.6rem}
-footer{padding:.75rem 1rem;font-size:.55rem;opacity:.7}
-.controls-row{display:flex;gap:1rem;flex-wrap:wrap}
-#stats{font-size:.55rem;margin-left:auto;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap}
-.badge-my{background:#22364d;color:#b7ddff;padding:2px 6px;border-radius:6px;font-size:.55rem;font-weight:600;letter-spacing:.04em}
-.nowrap{white-space:nowrap}
-@media (max-width:1180px){
-  th:nth-child(7),td:nth-child(7){display:none}
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font);
 }
-@media (max-width:920px){
-  table,thead,tr,th,td{font-size:.58rem}
-  header{flex-direction:column;align-items:stretch}
-  #stats{margin-left:0}
+html {
+  font-size: calc(var(--font-scale) * 100%);
+  transition: font-size 0.2s ease;
+}
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: center;
+  margin: 1rem 1.25rem;
+  background: var(--panel-alt);
+  padding: .5rem 1.25rem;
+}
+select,
+input[type="search"],
+input[type="range"] {
+  background: var(--panel);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  padding: .35rem .5rem;
+  border-radius: 4px;
+}
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: .5rem 1rem;
+  border-radius: 5px;
+  font-size: .8rem;
+  cursor: pointer;
+}
+button#saveUpdatesBtn {
+  background: var(--ok);
+}
+#issuesTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 1.25rem;
+}
+#issuesTable th {
+  background: var(--panel-alt);
+  padding: .5rem;
+  text-align: left;
+}
+#issuesTable td {
+  background: var(--panel);
+  padding: .5rem;
+  vertical-align: top;
+}
+#issuesTable tbody tr:nth-child(even) td {
+  background: var(--panel-alt);
+}
+.phase-badge {
+  background: var(--phase);
+  color: #fff;
+  border-radius: 3px;
+  padding: .2rem .4rem;
+  font-size: .7rem;
+}
+.badge-my {
+  background: var(--panel-alt);
+  color: var(--txt);
+  border-radius: 3px;
+  padding: .2rem .4rem;
+  font-size: .7rem;
+  margin-left: .3rem;
+}
+body.light-mode {
+  --bg: #fefefe;
+  --panel: #fff;
+  --panel-alt: #f7f7f7;
+  --txt: #111;
 }
 </style>
 </head>
 <body>
-<header>
-  <h1>Open Issues Dashboard (Ordered)</h1>
-  <div class="controls-row">
-    <div>
-      <label for="filterProgram">Program</label>
-      <select id="filterProgram">
-        <option value="">All</option>
-        <option>CX727</option>
-        <option>P708</option>
-        <option>HVF</option>
-        <option>General</option>
-      </select>
-    </div>
-    <div>
-      <label for="filterPhase">Implementation Phase</label>
-      <select id="filterPhase">
-        <option value="">All</option>
-      </select>
-    </div>
-    <div>
-      <label for="filterStatus">Status</label>
-      <select id="filterStatus">
-        <option value="">All</option>
-      </select>
-    </div>
-    <div>
-      <label for="filterMY">Model Year</label>
-      <select id="filterMY">
-        <option value="">All</option>
-      </select>
-    </div>
-    <div>
-      <label for="searchBox">Search</label>
-      <input id="searchBox" type="search" placeholder="Any text..."/>
-    </div>
-    <div>
-      <label for="showClosed">Show Closed</label>
-      <select id="showClosed">
-        <option value="0">No</option>
-        <option value="1">Yes</option>
-      </select>
-    </div>
-  </div>
-  <div id="stats"></div>
-</header>
+<!-- Main content starts -->
 
 <!-- Add New Issue Button -->
-<div style="margin:1rem 1.25rem 0 1.25rem;">
-  <button id="addIssueBtn" style="background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;font-size:.8rem;cursor:pointer;">Add New Issue</button>
-    <!-- Reset All Data button removed -->
-</div>
+<header>
+  <button id="addIssueBtn">Add New Issue</button>
+  <button id="saveUpdatesBtn">Save Updates</button>
+    <span id="saveSpinner" style="display:none;margin-left:.5rem;">⏳ Saving...</span>
+  <label for="filterProgram">Program</label>
+  <select id="filterProgram">
+    <option value="">All</option>
+    <option>CX727</option>
+    <option>P708</option>
+    <option>HVF</option>
+    <option>General</option>
+  </select>
+  <label for="filterPhase">Phase</label>
+  <select id="filterPhase">
+    <option value="">All</option>
+  </select>
+  <label for="filterPriority">Priority</label>
+  <select id="filterPriority">
+    <option value="">All</option>
+  </select>
+  <label for="filterMY">Model Year</label>
+  <select id="filterMY">
+    <option value="">All</option>
+  </select>
+  <label for="searchBox">Search</label>
+  <input id="searchBox" type="search" placeholder="Any text..." />
+  <label for="showClosed">Show Closed</label>
+  <select id="showClosed">
+    <option value="0">No</option>
+    <option value="1">Yes</option>
+  </select>
+  <label for="fontSizeRange">Font Size</label>
+  <input type="range" id="fontSizeRange" min="0.75" max="1.5" step="0.05" value="1" />
+  <button id="toggleThemeBtn">🌙</button>
+  <div id="stats"></div>
+</header>
 
 <!-- Add New Issue Modal -->
 <div id="addIssueModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
@@ -700,34 +671,67 @@ rawIssues.forEach(r=>{
 });
 
 const selPhase = document.getElementById('filterPhase');
-[...phaseSet].sort().forEach(p=>{
-  const o=document.createElement('option');o.value=p;o.textContent=p;selPhase.appendChild(o);
-});
+if(selPhase){
+  [...phaseSet].sort().forEach(p=>{
+    const o=document.createElement('option');o.value=p;o.textContent=p;selPhase.appendChild(o);
+  });
+}
 const selStatus = document.getElementById('filterStatus');
-[...statusSet].sort().forEach(s=>{
-  const o=document.createElement('option');o.value=s;o.textContent=s;selStatus.appendChild(o);
-});
+if(selStatus){
+  [...statusSet].sort().forEach(s=>{
+    const o=document.createElement('option');o.value=s;o.textContent=s;selStatus.appendChild(o);
+  });
+}
 const selMY = document.getElementById('filterMY');
-[...mySet].sort().forEach(m=>{
-  const o=document.createElement('option');o.value=m;o.textContent=m;selMY.appendChild(o);
-});
+if(selMY){
+  [...mySet].sort().forEach(m=>{
+    const o=document.createElement('option');o.value=m;o.textContent=m;selMY.appendChild(o);
+  });
+}
+// Populate Add New Issue modelYear select dynamically
+const newMyEl = document.getElementById('newMY');
+if(newMyEl){
+  newMyEl.innerHTML = '<option value="">Select...</option>';
+  [...mySet].sort().forEach(m=>{
+    const o=document.createElement('option');o.value=m;o.textContent=m;newMyEl.appendChild(o);
+  });
+}
 
 const tbody = document.querySelector('#issuesTable tbody');
 const statsEl = document.getElementById('stats');
 
 function render(){
-  const fp=document.getElementById('filterProgram').value;
-  const ph=document.getElementById('filterPhase').value;
-  const st=document.getElementById('filterStatus').value;
-  const my=document.getElementById('filterMY').value;
-  const q=document.getElementById('searchBox').value.toLowerCase();
-  const showClosed=document.getElementById('showClosed').value==="1";
+  const fpEl = document.getElementById('filterProgram');
+  const fp = fpEl ? fpEl.value : '';
+  const prEl = document.getElementById('filterPriority');
+  const pr = prEl ? prEl.value : '';
+  const phEl = document.getElementById('filterPhase');
+  const ph = phEl ? phEl.value : '';
+  const stEl = document.getElementById('filterStatus');
+  const st = stEl ? stEl.value : '';
+  const myEl = document.getElementById('filterMY');
+  const my = myEl ? myEl.value : '';
+  const qEl = document.getElementById('searchBox');
+  const q = qEl ? qEl.value.toLowerCase() : '';
+  const showClosedEl = document.getElementById('showClosed');
+  const showClosed = showClosedEl ? showClosedEl.value === "1" : false;
 
   tbody.innerHTML='';
   let shown=0;
   rawIssues.forEach((r,index)=>{
     if(fp && r.program!==fp) return;
     if(ph && r.phase!==ph) return;
+    if(pr){
+      // Handle numeric legacy priorities mapping to textual categories if needed
+      const mapNumToText={
+        '1':'Urgent and Important',
+        '2':'Important but Not Urgent',
+        '3':'Urgent but Not Important',
+        '4':'Neither Urgent nor Important'
+      };
+      const normalizedPriority = mapNumToText[r.priority] || r.priority;
+      if(normalizedPriority!==pr) return;
+    }
     if(st && r.status!==st) return;
     if(my && r.modelYear!==my) return;
     if(!showClosed && (r.status==="Closed"||r.status==="Closure")) return;
@@ -802,15 +806,22 @@ function render(){
                 <button onclick="editNextStep(${index}, ${stepIndex})" id="editNextStepBtn_${index}_${stepIndex}" style="background:#ffa500;color:#000;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">✏️ Edit</button>
                 <button onclick="saveNextStep(${index}, ${stepIndex})" id="saveNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--ok);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">💾 Save</button>
                 <button onclick="cancelEditNextStep(${index}, ${stepIndex})" id="cancelNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--border);color:var(--txt);border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">❌ Cancel</button>
-                <button onclick="deleteNextStep(${index}, ${stepIndex})" style="background:var(--danger);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🗑️ Delete</button>
+                <button onclick="deleteNextStep(${index}, ${stepIndex})" id="deleteNextStepBtn_${index}_${stepIndex}" style="background:var(--danger);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🗑️ Delete</button>
               </div>
             </div>
           `;
         } else {
-          // Legacy step without timestamp
+          // Legacy step without timestamp: show, edit, and allow deletion
           return `
             <div style="border-bottom:1px solid var(--border);padding:.3rem 0;margin-bottom:.3rem;">
-              <div style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(step)}</div>
+              <div id="nextStepText_${index}_${stepIndex}" style="font-size:.6rem;margin-bottom:.3rem;">${escapeHTML(step)}</div>
+              <textarea id="editNextStep_${index}_${stepIndex}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:40px;margin-bottom:.3rem;">${escapeHTML(step)}</textarea>
+              <div style="display:flex;gap:.3rem;">
+                <button onclick="editNextStep(${index}, ${stepIndex})" id="editNextStepBtn_${index}_${stepIndex}" style="background:#ffa500;color:#000;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">✏️ Edit</button>
+                <button onclick="saveNextStep(${index}, ${stepIndex})" id="saveNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--ok);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">💾 Save</button>
+                <button onclick="cancelEditNextStep(${index}, ${stepIndex})" id="cancelNextStepBtn_${index}_${stepIndex}" style="display:none;background:var(--border);color:var(--txt);border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">❌ Cancel</button>
+                <button onclick="deleteNextStep(${index}, ${stepIndex})" id="deleteNextStepBtn_${index}_${stepIndex}" style="background:var(--danger);color:#fff;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);">🗑️ Delete</button>
+              </div>
             </div>
           `;
         }
@@ -901,7 +912,15 @@ function render(){
       </td>
       <td>${r.program}</td>
       <td>${priorityCell}</td>
-      <td>${r.item}</td>
+      <td>
+        <div id="itemDisplay_${index}">${r.item}</div>
+        <textarea id="itemEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;min-height:40px;resize:vertical;">${escapeHTML(r.item)}</textarea>
+  <button id="itemEditBtn_${index}" onclick="editItem(${index})" style="background:#ffa500;color:#000;border:none;padding:.2rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;margin-top:.2rem;">✏️ Edit</button>
+        <div id="itemEditActions_${index}" style="display:none;margin-top:.3rem;">
+          <button onclick="saveItem(${index})" style="background:var(--ok);color:#fff;border:none;padding:.2rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;margin-right:.3rem;">Save</button>
+          <button onclick="cancelItemEdit(${index})" style="background:var(--border);color:var(--txt);border:none;padding:.2rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;">Cancel</button>
+        </div>
+      </td>
       <td class="status status-${r.status.replace(/\s/g,'')}">
         <span id="statusDisplay_${index}" onclick="editStatus(${index})" style="cursor:pointer;text-decoration:underline;color:var(--accent);">${r.status}</span>
         <select id="statusEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="saveStatus(${index})" onblur="cancelStatusEdit(${index})">
@@ -932,13 +951,76 @@ function escapeHTML(s){
 }
 
 // LocalStorage functions for persistence
+// Persist data to backend API
+async function persistBackend() {
+  try {
+    await fetch('/api/issues', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(rawIssues)
+    });
+    console.log('Data persisted to backend');
+  } catch (e) {
+    console.error('Backend persist failed:', e);
+  }
+}
+
+// Save to localStorage and backend
 function saveToLocalStorage() {
   try {
     localStorage.setItem('issuesData', JSON.stringify(rawIssues));
     console.log('Data saved to localStorage');
+    // also send to backend
+    persistBackend();
   } catch (e) {
     console.error('Failed to save to localStorage:', e);
   }
+}
+
+// References for Save Updates button and spinner
+const saveUpdatesBtn = document.getElementById('saveUpdatesBtn');
+const saveSpinner = document.getElementById('saveSpinner');
+
+// Initialize spinner hidden
+saveSpinner.style.display = 'none';
+
+function saveUpdates(){
+  // Show spinner
+  saveSpinner.style.display = 'inline-block';
+  saveUpdatesBtn.disabled = true;
+  saveSpinner.textContent = '⏳ Saving...';
+  saveSpinner.style.color = 'var(--txt)';
+  // Persist
+  saveToLocalStorage();
+  persistBackend().then(() => {
+    saveSpinner.textContent = '✅ Saved';
+    saveSpinner.style.color = 'var(--ok)';
+  }).catch(() => {
+    saveSpinner.textContent = '❌ Error';
+    saveSpinner.style.color = 'var(--danger)';
+  }).finally(() => {
+    setTimeout(() => {
+      saveSpinner.style.display = 'none';
+      saveUpdatesBtn.disabled = false;
+    }, 1500);
+  });
+}
+
+// Manual export: allow user to download the current dashboard (HTML with embedded data)
+function saveUpdates(){
+  saveSpinner.style.display='inline';
+  saveUpdatesBtn.disabled=true;
+  saveSpinner.textContent='⏳ Saving...';
+  // Always refresh localStorage copy & persist backend
+  saveToLocalStorage();
+  // Wait for backend to finish
+  persistBackend().finally(()=>{
+    saveSpinner.textContent='✅ Saved';
+    saveSpinner.style.color='var(--ok)';
+    // Hide on next input change
+    document.querySelectorAll('input,select,textarea,button').forEach(el=>el.addEventListener('click',()=> saveSpinner.style.display='none', {once:true}));
+    setTimeout(()=>{ saveSpinner.style.display='none'; saveUpdatesBtn.disabled=false; }, 1000);
+  });
 }
 
 function loadFromLocalStorage() {
@@ -1316,6 +1398,56 @@ function cancelPriorityEdit(index) {
   edit.style.display = 'none';
 }
 
+// Functions for editing Item
+function editItem(index) {
+  const display = document.getElementById(`itemDisplay_${index}`);
+  const edit = document.getElementById(`itemEdit_${index}`);
+  const editBtn = document.getElementById(`itemEditBtn_${index}`);
+  const actions = document.getElementById(`itemEditActions_${index}`);
+  
+  // Set current value in textarea
+  edit.value = rawIssues[index].item || '';
+  
+  // Toggle visibility
+  display.style.display = 'none';
+  edit.style.display = 'block';
+  editBtn.style.display = 'none';
+  actions.style.display = 'block';
+  edit.focus();
+}
+
+function saveItem(index) {
+  const edit = document.getElementById(`itemEdit_${index}`);
+  const newItem = edit.value.trim();
+  
+  if (!newItem) {
+    alert('Item description cannot be empty.');
+    return;
+  }
+  
+  // Update the data
+  rawIssues[index].item = newItem;
+  
+  // Save to localStorage
+  saveToLocalStorage();
+  
+  // Re-render the table
+  render();
+}
+
+function cancelItemEdit(index) {
+  const display = document.getElementById(`itemDisplay_${index}`);
+  const edit = document.getElementById(`itemEdit_${index}`);
+  const editBtn = document.getElementById(`itemEditBtn_${index}`);
+  const actions = document.getElementById(`itemEditActions_${index}`);
+  
+  // Revert visibility without saving
+  display.style.display = 'block';
+  edit.style.display = 'none';
+  editBtn.style.display = 'inline-block';
+  actions.style.display = 'none';
+}
+
 // Functions for editing Status
 function editStatus(index) {
   const display = document.getElementById(`statusDisplay_${index}`);
@@ -1374,7 +1506,7 @@ cancelAddIssue.addEventListener('click',()=>{
   addIssueModal.style.display='none';
   addIssueForm.reset();
 });
-addIssueModal.addEventListener('click',e=>{
+addIssueModal.addEventListener('click', e=>{
   if(e.target===addIssueModal){
     addIssueModal.style.display='none';
     addIssueForm.reset();
@@ -1416,6 +1548,19 @@ addIssueForm.addEventListener('submit',e=>{
   render();
   addIssueModal.style.display='none';
   addIssueForm.reset();
+});
+// Font size slider: update --font-scale variable
+const fontSlider = document.getElementById('fontSizeRange');
+fontSlider.addEventListener('input', e => {
+  document.documentElement.style.setProperty('--font-scale', e.target.value);
+});
+// Theme toggle: switch between dark and light modes
+const themeBtn = document.getElementById('toggleThemeBtn');
+// Initialize icon based on current mode
+themeBtn.textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+themeBtn.addEventListener('click', () => {
+  const isLight = document.body.classList.toggle('light-mode');
+  themeBtn.textContent = isLight ? '☀️' : '🌙';
 });
 </script>
 </body>
