@@ -76,6 +76,10 @@ button#saveUpdatesBtn {
   padding: .5rem;
   vertical-align: top;
 }
+#issuesTable td:nth-child(6),
+#issuesTable td:nth-child(8) {
+  font-size: .9rem;
+}
 #issuesTable tbody tr:nth-child(even) td {
   background: var(--panel-alt);
 }
@@ -94,11 +98,142 @@ button#saveUpdatesBtn {
   font-size: .7rem;
   margin-left: .3rem;
 }
+
+/* Priority badge styling */
+.priority-badge { display: inline-block; padding: .2rem .4rem; border-radius: 3px; font-size: .7rem; font-weight: 600; text-align: center; }
+.priority-1 { background: var(--danger); color: #fff; }
+.priority-2 { background: var(--warn);   color: #000; }
+.priority-3 { background: var(--ok);     color: #fff; }
+.priority-4 { background: var(--accent); color: #fff; }
+
+/* Horizontal divider between program groups */
+.program-break td { border-top: 2px solid #333; }
+/* Dark-mode override: thicker, lighter dividers */
+body:not(.light-mode) .program-break td {
+  border-top-width: 3px;
+  border-top-style: solid;
+  border-top-color: #888;
+}
+
 body.light-mode {
   --bg: #fefefe;
   --panel: #fff;
   --panel-alt: #f7f7f7;
   --txt: #111;
+}
+
+/* Details and Summary styling for Notes section */
+details {
+  margin: 0;
+  padding: 0;
+}
+
+details summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  color: var(--txt);
+  font-size: .6rem;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] summary {
+  margin-bottom: .5rem;
+}
+
+/* Date picker styling */
+.date-picker-container {
+  position: relative;
+  display: inline-block;
+}
+
+.date-picker-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.date-picker-row {
+  display: flex;
+  gap: .3rem;
+  margin-bottom: .3rem;
+  align-items: center;
+}
+
+.date-picker-row select {
+  flex: 1;
+  background: var(--panel);
+  color: var(--txt);
+  border: 1px solid var(--border);
+  padding: .25rem;
+  border-radius: 3px;
+  font-size: .6rem;
+}
+
+.date-display {
+  font-size: .6rem;
+  padding: .2rem .4rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: .2rem;
+}
+
+.select-date-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: .2rem .4rem;
+  border-radius: 3px;
+  font-size: .6rem;
+  cursor: pointer;
+}
+
+/* Program menu styling */
+.program-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.program-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  z-index: 1000;
+  min-width: 120px;
+  display: none;
+}
+
+.program-menu-item {
+  padding: .5rem .75rem;
+  cursor: pointer;
+  font-size: .7rem;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s;
+}
+
+.program-menu-item:last-child {
+  border-bottom: none;
+}
+
+.program-menu-item:hover {
+  background: var(--panel);
 }
 </style>
 </head>
@@ -125,6 +260,10 @@ body.light-mode {
   <label for="filterPriority">Priority</label>
   <select id="filterPriority">
     <option value="">All</option>
+    <option value="1">1 - Urgent and Important</option>
+    <option value="2">2 - Important but Not Urgent</option>
+    <option value="3">3 - Urgent but Not Important</option>
+    <option value="4">4 - Neither Urgent nor Important</option>
   </select>
   <label for="filterMY">Model Year</label>
   <select id="filterMY">
@@ -201,6 +340,8 @@ body.light-mode {
           <option>27MY</option>
           <option>28MY</option>
           <option>29MY</option>
+          <option>30MY</option>
+          <option>31MY</option>
         </select>
       </div>
       <div style="margin-bottom:.7rem;">
@@ -235,8 +376,8 @@ body.light-mode {
       <th>Item</th>
       <th>Status</th>
       <th>Next Steps</th>
-      <th>Completion / Target</th>
-      <th>Notes (Expand)</th>
+      <th>Completion Date</th>
+      <th>Notes</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -682,19 +823,34 @@ if(selStatus){
     const o=document.createElement('option');o.value=s;o.textContent=s;selStatus.appendChild(o);
   });
 }
+
+// Populate main Model Year filter with fixed options
 const selMY = document.getElementById('filterMY');
-if(selMY){
-  [...mySet].sort().forEach(m=>{
-    const o=document.createElement('option');o.value=m;o.textContent=m;selMY.appendChild(o);
+if (selMY) {
+  const years = ['', '25MY', '26MY', '26.5MY', '27MY', '28MY', '29MY', '30MY', '31MY'];
+  selMY.innerHTML = '';
+  years.forEach(val => {
+    const o = document.createElement('option');
+    o.value = val;
+    o.textContent = val || 'All';
+    selMY.appendChild(o);
   });
 }
+
 // Populate Add New Issue modelYear select dynamically
 const newMyEl = document.getElementById('newMY');
 if(newMyEl){
-  newMyEl.innerHTML = '<option value="">Select...</option>';
-  [...mySet].sort().forEach(m=>{
-    const o=document.createElement('option');o.value=m;o.textContent=m;newMyEl.appendChild(o);
-  });
+  newMyEl.innerHTML = `
+    <option value="">Select...</option>
+    <option>25MY</option>
+    <option>26MY</option>
+    <option>26.5MY</option>
+    <option>27MY</option>
+    <option>28MY</option>
+    <option>29MY</option>
+    <option>30MY</option>
+    <option>31MY</option>
+  `;
 }
 
 const tbody = document.querySelector('#issuesTable tbody');
@@ -716,36 +872,52 @@ function render(){
   const showClosedEl = document.getElementById('showClosed');
   const showClosed = showClosedEl ? showClosedEl.value === "1" : false;
 
-  tbody.innerHTML='';
-  let shown=0;
-  rawIssues.forEach((r,index)=>{
-    if(fp && r.program!==fp) return;
-    if(ph && r.phase!==ph) return;
-    if(pr){
-      // Handle numeric legacy priorities mapping to textual categories if needed
-      const mapNumToText={
-        '1':'Urgent and Important',
-        '2':'Important but Not Urgent',
-        '3':'Urgent but Not Important',
-        '4':'Neither Urgent nor Important'
-      };
-      const normalizedPriority = mapNumToText[r.priority] || r.priority;
-      if(normalizedPriority!==pr) return;
-    }
-    if(st && r.status!==st) return;
-    if(my && r.modelYear!==my) return;
-    if(!showClosed && (r.status==="Closed"||r.status==="Closure")) return;
-    const hay=[r.item,r.notes,r.next,r.status,r.phase,r.modelYear].join(' ').toLowerCase();
-    if(q && !hay.includes(q)) return;
+  // Clear table and prepare grouping by Program
+  tbody.innerHTML = '';
+  let shown = 0;
+  // Group order: General, CX727, P708, HVF
+  const programOrder = ['General','CX727','P708','HVF'];
+  // Map to entries with original indices
+  const entries = rawIssues.map((item, idx) => ({r: item, idx}));
+  entries.sort((a, b) => programOrder.indexOf(a.r.program) - programOrder.indexOf(b.r.program));
+  // Render each entry in sort order
+  entries.forEach(({r, idx: index}) => {
+     if(fp && r.program!==fp) return;
+     if(ph && r.phase!==ph) return;
+     if(pr){
+       // Map textual priorities to numeric codes for filtering
+       const textToNum = {
+         'Urgent and Important': '1',
+         'Important but Not Urgent': '2',
+         'Urgent but Not Important': '3',
+         'Neither Urgent nor Important': '4'
+       };
+       const priorityNum = textToNum[r.priority] || r.priority || '';
+       if(priorityNum !== pr) return;
+     }
+     if(st && r.status!==st) return;
+     if(my && r.modelYear!==my) return;
+     if(!showClosed && (r.status==="Closed"||r.status==="Closure")) return;
+     const hay=[r.item,r.notes,r.next,r.status,r.phase,r.modelYear].join(' ').toLowerCase();
+     if(q && !hay.includes(q)) return;
 
     // Debug: Log the current data for this issue
     if (r.notes || r.next) {
       console.log(`Issue ${index}: Notes="${r.notes}", Next="${r.next}"`);
     }
 
-    const tr=document.createElement('tr');
+    // Create row
+    const tr = document.createElement('tr');
+    // Add horizontal line when program changes from previous row
+    if (index > 0 && rawIssues[index].program !== rawIssues[index-1].program) {
+      tr.classList.add('program-break');
+    }
 
-    const phaseCell = `<span class="phase-badge phase-${r.phase||'NA'}">${r.phase||''}</span> <span class="badge-my">${r.modelYear||''}</span>`;
+    // Phase and Model Year display spans
+    const phaseCell = `
+      <span id="phaseDisplay_${index}" class="phase-badge phase-${r.phase||'NA'}" onclick="editPhase(${index})">${r.phase||''}</span>
+      <span id="myDisplay_${index}" class="badge-my" onclick="editMy(${index})">${r.modelYear||''}</span>
+    `;
     
     // Create notes section with existing notes and add comment functionality
     const displayNotes = (notes) => {
@@ -847,7 +1019,7 @@ function render(){
         <div style="max-height:300px;overflow-y:auto;">
           ${r.next ? displayNextSteps(r.next) : ''}
           <div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.5rem;">
-            <textarea id="newNextStep_${index}" placeholder="Add a next step update..." style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.6rem;min-height:60px;resize:vertical;"></textarea>
+            <textarea id="newNextStep_${index}" placeholder="Add a next step update..." style="width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:3px;font-size:.55rem;min-height:60px;resize:vertical;"></textarea>
             <button onclick="addNextStep(${index})" style="background:var(--accent);color:#fff;border:none;padding:.25rem .5rem;border-radius:3px;font-size:.55rem;margin-top:.3rem;cursor:pointer;">Add Step</button>
           </div>
         </div>
@@ -896,7 +1068,7 @@ function render(){
 
     tr.innerHTML=`
       <td>
-        <span id="phaseDisplay_${index}" onclick="editPhase(${index})" style="cursor:pointer;text-decoration:underline;color:var(--accent);">${phaseCell}</span>
+        ${phaseCell}
         <select id="phaseEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="savePhase(${index})" onblur="cancelPhaseEdit(${index})">
           <option value="">Select...</option>
           <option value="Concept">Concept</option>
@@ -909,8 +1081,29 @@ function render(){
           <option value="Planning">Planning</option>
           <option value="Personal">Personal</option>
         </select>
+       <select id="myEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="saveMy(${index})" onblur="cancelMyEdit(${index})">
+          <option value="">Select...</option>
+          <option>25MY</option>
+          <option>26MY</option>
+          <option>26.5MY</option>
+          <option>27MY</option>
+          <option>28MY</option>
+          <option>29MY</option>
+          <option>30MY</option>
+          <option>31MY</option>
+        </select>
       </td>
-      <td>${r.program}</td>
+      <td onclick="showProgramMenu(${index}, event)" style="cursor:pointer;text-decoration:underline;color:var(--accent);position:relative;" title="Click to select program">
+        <div class="program-menu-container">
+          ${r.program}
+          <div id="programMenu_${index}" class="program-menu">
+            <div class="program-menu-item" onclick="selectProgram(${index}, 'CX727', event)">CX727</div>
+            <div class="program-menu-item" onclick="selectProgram(${index}, 'General', event)">General</div>
+            <div class="program-menu-item" onclick="selectProgram(${index}, 'P708', event)">P708</div>
+            <div class="program-menu-item" onclick="selectProgram(${index}, 'HVF', event)">HVF</div>
+          </div>
+        </div>
+      </td>
       <td>${priorityCell}</td>
       <td>
         <div id="itemDisplay_${index}">${r.item}</div>
@@ -937,14 +1130,183 @@ function render(){
         </select>
       </td>
       <td>${nextStepsContent}</td>
-      <td>${r.target||''}</td>
+      <td>${getCompletionDateCell(r, index)}</td>
       <td>${notesContent}</td>
+      <td></td> <!-- New Notes column -->
+      <!-- Notes column rendered in place -->
     `;
     tbody.appendChild(tr);
     shown++;
   });
-  statsEl.textContent = `Shown: ${shown}  | Total: ${rawIssues.length}`;
+   
+  // Compute breakdown by program
+  const total = rawIssues.length;
+  const counts = { CX727: 0, P708: 0, HVF: 0, General: 0 };
+  rawIssues.forEach(r => { if (counts[r.program] !== undefined) counts[r.program]++; });
+  const breakdown = `CX727: ${counts.CX727} | P708: ${counts.P708} | HVF: ${counts.HVF} | General: ${counts.General}`;
+  statsEl.textContent = `Shown: ${shown} | ${breakdown} | Total: ${total}`;
 }
+
+// Date picker functionality
+function getCompletionDateCell(r, index) {
+  const completionDate = r.completionDate || '';
+  const displayDate = completionDate ? formatDate(completionDate) : '';
+  
+  return `
+    <div class="date-picker-container">
+      <div id="dateDisplay_${index}" class="date-display" style="display:${displayDate ? 'block' : 'none'}">${displayDate}</div>
+      <button id="selectDateBtn_${index}" class="select-date-btn" onclick="showDatePicker(${index})" style="display:${displayDate ? 'none' : 'block'}">Select Date</button>
+      <button id="editDateBtn_${index}" class="select-date-btn" onclick="showDatePicker(${index})" style="display:${displayDate ? 'block' : 'none'};background:var(--warn);color:#000;">Edit Date</button>
+      <div id="datePicker_${index}" class="date-picker-popup" style="display:none">
+        <div class="date-picker-row">
+          <select id="monthSelect_${index}">
+            <option value="">Month</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="date-picker-row">
+          <select id="daySelect_${index}">
+            <option value="">Day</option>
+            ${Array.from({length: 31}, (_, i) => `<option value="${String(i + 1).padStart(2, '0')}">${i + 1}</option>`).join('')}
+          </select>
+        </div>
+        <div class="date-picker-row">
+          <select id="yearSelect_${index}">
+            <option value="">Year</option>
+            ${Array.from({length: 10}, (_, i) => {
+              const year = new Date().getFullYear() + i;
+              return `<option value="${year}">${year}</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div class="date-picker-row">
+          <button onclick="saveDate(${index})" style="background:var(--ok);color:#fff;border:none;padding:.25rem .5rem;border-radius:3px;font-size:.6rem;cursor:pointer;margin-right:.3rem;">Save</button>
+          <button onclick="cancelDatePicker(${index})" style="background:var(--border);color:var(--txt);border:none;padding:.25rem .5rem;border-radius:3px;font-size:.6rem;cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showDatePicker(index) {
+  // Hide all other date pickers
+  document.querySelectorAll('.date-picker-popup').forEach(popup => {
+    if (!popup.id.endsWith(`_${index}`)) {
+      popup.style.display = 'none';
+    }
+  });
+  
+  const picker = document.getElementById(`datePicker_${index}`);
+  const currentDate = rawIssues[index].completionDate;
+  
+  // Pre-populate if date exists
+  if (currentDate) {
+    const [year, month, day] = currentDate.split('-');
+    document.getElementById(`monthSelect_${index}`).value = month;
+    document.getElementById(`daySelect_${index}`).value = day;
+    document.getElementById(`yearSelect_${index}`).value = year;
+  }
+  
+  picker.style.display = 'block';
+}
+
+function saveDate(index) {
+  const month = document.getElementById(`monthSelect_${index}`).value;
+  const day = document.getElementById(`daySelect_${index}`).value;
+  const year = document.getElementById(`yearSelect_${index}`).value;
+  
+  if (!month || !day || !year) {
+    alert('Please select month, day, and year');
+    return;
+  }
+  
+  const dateString = `${year}-${month}-${day}`;
+  rawIssues[index].completionDate = dateString;
+  
+  // Update display
+  const displayDate = formatDate(dateString);
+  document.getElementById(`dateDisplay_${index}`).textContent = displayDate;
+  document.getElementById(`dateDisplay_${index}`).style.display = 'block';
+  document.getElementById(`selectDateBtn_${index}`).style.display = 'none';
+  document.getElementById(`editDateBtn_${index}`).style.display = 'block';
+  
+  cancelDatePicker(index);
+  saveToLocalStorage();
+}
+
+function cancelDatePicker(index) {
+  document.getElementById(`datePicker_${index}`).style.display = 'none';
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const [year, month, day] = dateString.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
+}
+
+// Close date pickers when clicking outside
+document.addEventListener('click', function(event) {
+  if (!event.target.closest('.date-picker-container')) {
+    document.querySelectorAll('.date-picker-popup').forEach(popup => {
+      popup.style.display = 'none';
+    });
+  }
+});
+
+// Function to show Add New Issue modal when Program cell is clicked
+function showAddIssueModal() {
+  const addIssueModal = document.getElementById('addIssueModal');
+  addIssueModal.style.display = 'flex';
+}
+
+// Program menu functions
+function showProgramMenu(index, event) {
+  event.stopPropagation();
+  // Hide all other program menus
+  document.querySelectorAll('.program-menu').forEach(menu => {
+    if (!menu.id.endsWith(`_${index}`)) {
+      menu.style.display = 'none';
+    }
+  });
+  
+  const menu = document.getElementById(`programMenu_${index}`);
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+function selectProgram(index, program, event) {
+  event.stopPropagation();
+  
+  // Update the data
+  rawIssues[index].program = program;
+  
+  // Hide the menu
+  document.getElementById(`programMenu_${index}`).style.display = 'none';
+  
+  // Save changes and re-render
+  saveToLocalStorage();
+  render();
+}
+
+// Close program menus when clicking outside
+document.addEventListener('click', function(event) {
+  if (!event.target.closest('.program-menu-container')) {
+    document.querySelectorAll('.program-menu').forEach(menu => {
+      menu.style.display = 'none';
+    });
+  }
+});
 
 function escapeHTML(s){
   return s.replace(/[&<>"]/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -984,13 +1346,17 @@ const saveSpinner = document.getElementById('saveSpinner');
 // Initialize spinner hidden
 saveSpinner.style.display = 'none';
 
-function saveUpdates(){
+// Bind Save Updates button click to saveUpdates handler
+saveUpdatesBtn.addEventListener('click', saveUpdates);
+
+// Unified Save Updates function
+function saveUpdates() {
   // Show spinner
   saveSpinner.style.display = 'inline-block';
   saveUpdatesBtn.disabled = true;
   saveSpinner.textContent = '⏳ Saving...';
   saveSpinner.style.color = 'var(--txt)';
-  // Persist
+  // Persist data
   saveToLocalStorage();
   persistBackend().then(() => {
     saveSpinner.textContent = '✅ Saved';
@@ -1007,55 +1373,33 @@ function saveUpdates(){
 }
 
 // Manual export: allow user to download the current dashboard (HTML with embedded data)
-function saveUpdates(){
-  saveSpinner.style.display='inline';
-  saveUpdatesBtn.disabled=true;
-  saveSpinner.textContent='⏳ Saving...';
-  // Always refresh localStorage copy & persist backend
-  saveToLocalStorage();
-  // Wait for backend to finish
-  persistBackend().finally(()=>{
-    saveSpinner.textContent='✅ Saved';
-    saveSpinner.style.color='var(--ok)';
-    // Hide on next input change
-    document.querySelectorAll('input,select,textarea,button').forEach(el=>el.addEventListener('click',()=> saveSpinner.style.display='none', {once:true}));
-    setTimeout(()=>{ saveSpinner.style.display='none'; saveUpdatesBtn.disabled=false; }, 1000);
-  });
-}
+// function saveUpdates(){
+//   saveSpinner.style.display='inline';
+//   saveUpdatesBtn.disabled=true;
+//   saveSpinner.textContent='⏳ Saving...';
+//   // Always refresh localStorage copy & persist backend
+//   saveToLocalStorage();
+//   // Wait for backend to finish
+//   persistBackend().finally(()=>{
+//     saveSpinner.textContent='✅ Saved';
+//     saveSpinner.style.color='var(--ok)';
+//     // Hide on next input change
+//     document.querySelectorAll('input,select,textarea,button').forEach(el=>el.addEventListener('click',()=> saveSpinner.style.display='none', {once:true}));
+//     setTimeout(()=>{ saveSpinner.style.display='none'; saveUpdatesBtn.disabled=false; }, 1000);
+//   });
+// }
 
 function loadFromLocalStorage() {
   try {
     const saved = localStorage.getItem('issuesData');
     if (saved) {
       const loadedData = JSON.parse(saved);
-      // If saved list longer than current seed, append new ones
-      if (loadedData.length > rawIssues.length) {
-        console.log('Appending', loadedData.length - rawIssues.length, 'persisted new issues');
-      }
-      loadedData.forEach((savedIssue, index) => {
-        if (rawIssues[index]) {
-          // Update mutable fields (notes, next, priority, status, etc.) in-place
-          Object.assign(rawIssues[index], {
-            notes: savedIssue.notes || rawIssues[index].notes || '',
-            next: savedIssue.next || rawIssues[index].next || '',
-            priority: savedIssue.priority || rawIssues[index].priority || '',
-            status: savedIssue.status || rawIssues[index].status || '',
-            target: savedIssue.target || rawIssues[index].target || '',
-            modelYear: savedIssue.modelYear || rawIssues[index].modelYear || '',
-            phase: savedIssue.phase || rawIssues[index].phase || ''
-          });
-        } else {
-          // New issue that did not exist in original seed -> push
-          rawIssues.push(savedIssue);
-        }
-      });
+      rawIssues.splice(0, rawIssues.length, ...loadedData);
       console.log('Data loaded from localStorage');
-      return true;
     }
   } catch (e) {
     console.error('Failed to load from localStorage:', e);
   }
-  return false;
 }
 
 function clearStoredData() {
@@ -1356,6 +1700,25 @@ function cancelPhaseEdit(index) {
   edit.style.display = 'none';
 }
 
+// Functions for editing Model Year
+function editMy(index) {
+  document.getElementById(`myDisplay_${index}`).style.display = 'none';
+  const sel = document.getElementById(`myEdit_${index}`);
+  sel.style.display = 'block';
+  sel.value = rawIssues[index].modelYear || '';
+  sel.focus();
+}
+function saveMy(index) {
+  const sel = document.getElementById(`myEdit_${index}`);
+  rawIssues[index].modelYear = sel.value;
+  saveToLocalStorage();
+  render();
+}
+function cancelMyEdit(index) {
+  document.getElementById(`myDisplay_${index}`).style.display = 'inline-block';
+  document.getElementById(`myEdit_${index}`).style.display = 'none';
+}
+
 // Functions for editing Priority
 function editPriority(index) {
   const display = document.getElementById(`priorityDisplay_${index}`);
@@ -1551,7 +1914,8 @@ addIssueForm.addEventListener('submit',e=>{
 });
 // Font size slider: update --font-scale variable
 const fontSlider = document.getElementById('fontSizeRange');
-fontSlider.addEventListener('input', e => {
+// Only update font-scale on change (click/release), ignore intermediate dragging
+fontSlider.addEventListener('change', e => {
   document.documentElement.style.setProperty('--font-scale', e.target.value);
 });
 // Theme toggle: switch between dark and light modes
