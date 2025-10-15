@@ -76,8 +76,8 @@ button#saveUpdatesBtn {
   padding: .5rem;
   vertical-align: top;
 }
-#issuesTable td:nth-child(6),
-#issuesTable td:nth-child(8) {
+#issuesTable td:nth-child(7),
+#issuesTable td:nth-child(9) {
   font-size: .9rem;
 }
 #issuesTable tbody tr:nth-child(even) td {
@@ -373,8 +373,9 @@ details[open] summary {
       <th style="min-width:130px">Implementation Phase / MY</th>
       <th>Program</th>
       <th>Priority</th>
-      <th>Item</th>
-      <th>Status</th>
+  <th>Item</th>
+  <th>Cr / Notice</th>
+  <th>Status</th>
       <th>Next Steps</th>
       <th>Completion Date</th>
       <th>Notes</th>
@@ -856,6 +857,36 @@ if(newMyEl){
 const tbody = document.querySelector('#issuesTable tbody');
 const statsEl = document.getElementById('stats');
 
+// Utility: extract CR / Notice codes (e.g., C14xxxxxx) from item text
+function extractCrCodes(issue){
+  if(!issue || !issue.item) return;
+  // Codes: Start with A or C followed by 8 digits (e.g., A14800403, C14781645)
+  const codeRegex = /[AC]\d{8}/g;
+  const found = issue.item.match(codeRegex);
+  if(found && found.length){
+    // Merge with existing if present, keep uniqueness
+    let existing = [];
+    if(issue.crNotice){
+      existing = issue.crNotice.split(/[,\s]+/).filter(Boolean);
+    }
+    const mergedSet = new Set([...existing, ...found]);
+    issue.crNotice = Array.from(mergedSet).join(', ');
+
+    // Remove codes and optional preceding markers (CR, Alert, DCR, etc.) if followed immediately by code
+    let newItem = issue.item
+      .replace(/\b(?:CRID|CR|Alert|DCR)\s+(?=[AC]\d{8})/g,'')
+      .replace(codeRegex,'')
+      .replace(/\(\s*\)/g,''); // Remove empty parentheses
+
+    // Clean up leftover extra spaces, commas
+    newItem = newItem.replace(/\s{2,}/g,' ').replace(/ ,/g,',').replace(/\s+\/\s+/g,' / ').trim();
+    issue.item = newItem;
+  }
+}
+
+// Pre-process all issues once on load (non-destructive if crNotice already exists)
+rawIssues.forEach(extractCrCodes);
+
 function render(){
   const fpEl = document.getElementById('filterProgram');
   const fp = fpEl ? fpEl.value : '';
@@ -1066,6 +1097,9 @@ function render(){
       `;
     }
 
+    // Ensure CR codes extracted if new data loaded later
+    extractCrCodes(r);
+
     tr.innerHTML=`
       <td>
         ${phaseCell}
@@ -1114,6 +1148,11 @@ function render(){
           <button onclick="cancelItemEdit(${index})" style="background:var(--border);color:var(--txt);border:none;padding:.2rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;">Cancel</button>
         </div>
       </td>
+      <td>
+        <div id="crDisplay_${index}" style="${r.crNotice?'' : 'display:none;'}">${r.crNotice||''}</div>
+        <input id="crEdit_${index}" value="${r.crNotice||''}" style="display:${r.crNotice? 'none':'block'};width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" placeholder="Add CR/Notice" onblur="saveCr(${index})" />
+        <button id="crEditBtn_${index}" onclick="editCr(${index})" style="${r.crNotice? 'display:inline-block':'display:none'};background:#ffa500;color:#000;border:none;padding:.2rem .5rem;border-radius:4px;font-size:.6rem;cursor:pointer;margin-top:.2rem;">✏️ Edit</button>
+      </td>
       <td class="status status-${r.status.replace(/\s/g,'')}">
         <span id="statusDisplay_${index}" onclick="editStatus(${index})" style="cursor:pointer;text-decoration:underline;color:var(--accent);">${r.status}</span>
         <select id="statusEdit_${index}" style="display:none;width:100%;background:var(--panel-alt);color:var(--txt);border:1px solid var(--border);padding:.3rem;border-radius:4px;font-size:.6rem;" onchange="saveStatus(${index})" onblur="cancelStatusEdit(${index})">
@@ -1132,7 +1171,6 @@ function render(){
       <td>${nextStepsContent}</td>
       <td>${getCompletionDateCell(r, index)}</td>
       <td>${notesContent}</td>
-      <td></td> <!-- New Notes column -->
       <!-- Notes column rendered in place -->
     `;
     tbody.appendChild(tr);
@@ -1396,6 +1434,8 @@ function loadFromLocalStorage() {
       const loadedData = JSON.parse(saved);
       rawIssues.splice(0, rawIssues.length, ...loadedData);
       console.log('Data loaded from localStorage');
+      // Re-extract codes in case older data stored without crNotice
+      rawIssues.forEach(extractCrCodes);
     }
   } catch (e) {
     console.error('Failed to load from localStorage:', e);
@@ -1850,6 +1890,21 @@ function cancelStatusEdit(index) {
 }
 
 document.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',render));
+
+// CR / Notice edit helpers
+function editCr(index){
+  document.getElementById(`crDisplay_${index}`).style.display='none';
+  document.getElementById(`crEdit_${index}`).style.display='block';
+  document.getElementById(`crEdit_${index}`).focus();
+  document.getElementById(`crEditBtn_${index}`).style.display='none';
+}
+function saveCr(index){
+  const inp = document.getElementById(`crEdit_${index}`);
+  const val = inp.value.trim();
+  rawIssues[index].crNotice = val || '';
+  saveToLocalStorage();
+  render();
+}
 
 // Load saved data from localStorage on page load
 loadFromLocalStorage();
